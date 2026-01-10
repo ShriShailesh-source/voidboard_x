@@ -383,6 +383,7 @@ export default function ExcalidrawClone() {
   const [selectedId, setSelectedId] = useState(null);
   const [startPoint, setStartPoint] = useState(null);
   const [editingTextId, setEditingTextId] = useState(null);
+  const [textValue, setTextValue] = useState('');
   const [snapshots, setSnapshots] = useState(persistedState.snapshots);
   const [showSnapshotModal, setShowSnapshotModal] = useState(false);
   const [snapshotName, setSnapshotName] = useState('');
@@ -407,10 +408,14 @@ export default function ExcalidrawClone() {
   // Force focus textarea when editing
   useEffect(() => {
     if (editingTextId && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.select();
+      const element = elements.find(el => el.id === editingTextId);
+      if (element) {
+        setTextValue(element.text || '');
+        textareaRef.current.focus();
+        textareaRef.current.select();
+      }
     }
-  }, [editingTextId]);
+  }, [editingTextId, elements]);
   
   // Auto-save to localStorage when state changes
   useEffect(() => {
@@ -1584,22 +1589,21 @@ export default function ExcalidrawClone() {
           <textarea
             ref={textareaRef}
             autoFocus
-            value={editingElement.text || ''}
+            value={textValue}
             onFocus={() => {
               isEditingText.current = true;
             }}
             onChange={(e) => {
-              setElements(prev => prev.map(el =>
-                el.id === editingTextId ? { ...el, text: e.target.value } : el
-              ));
+              setTextValue(e.target.value);
             }}
             onBlur={(e) => {
               isEditingText.current = false;
-              const finalText = e.target.value;
+              const finalText = textValue;
               setElements(prev => prev.map(el =>
                 el.id === editingTextId ? { ...el, text: finalText, isEditing: false } : el
               ));
               setEditingTextId(null);
+              setTextValue('');
             }}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
