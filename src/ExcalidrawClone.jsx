@@ -348,6 +348,7 @@ const getElementBounds = (element) => {
 export default function ExcalidrawClone() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
   
   // Load persisted state from localStorage
   const loadPersistedState = () => {
@@ -1569,6 +1570,7 @@ export default function ExcalidrawClone() {
             width: `${editingScreenPos.width}px`,
             height: `${editingScreenPos.height}px`,
             zIndex: 10000,
+            pointerEvents: 'auto'
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onMouseUp={(e) => e.stopPropagation()}
@@ -1576,6 +1578,7 @@ export default function ExcalidrawClone() {
           onClick={(e) => e.stopPropagation()}
         >
           <textarea
+            ref={textareaRef}
             autoFocus
             defaultValue={editingElement.text || ''}
             onFocus={() => {
@@ -1616,6 +1619,14 @@ export default function ExcalidrawClone() {
             }}
           />
         </div>
+      )}
+      
+      {/* Force focus on textarea when it appears */}
+      {editingTextId && textareaRef.current && (
+        (() => {
+          setTimeout(() => textareaRef.current?.focus(), 0);
+          return null;
+        })()
       )}
       
       <div style={{ position: 'fixed', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '14px', padding: '10px', backdropFilter: 'blur(12px)', boxShadow: '8px 12px 32px rgba(0,0,0,0.35)' }}>
