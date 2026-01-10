@@ -1572,18 +1572,11 @@ export default function ExcalidrawClone() {
             zIndex: 10000,
             pointerEvents: 'auto'
           }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
-          onMouseMove={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
         >
           <textarea
             ref={textareaRef}
             autoFocus
-            defaultValue={editingElement.text || ''}
-            onFocus={() => {
-              isEditingText.current = true;
-            }}
+            value={editingElement.text || ''}
             onChange={(e) => {
               setElements(prev => prev.map(el =>
                 el.id === editingTextId ? { ...el, text: e.target.value } : el
@@ -1601,30 +1594,35 @@ export default function ExcalidrawClone() {
               if (e.key === 'Escape') {
                 e.preventDefault();
                 isEditingText.current = false;
-                e.target.blur();
+                textareaRef.current?.blur();
               }
             }}
             style={{
               width: '100%',
               height: '100%',
-              border: '2px solid #3b82f6',
-              padding: '8px',
+              border: '3px solid #3b82f6',
+              padding: '10px',
               resize: 'none',
               outline: 'none',
               fontSize: `${14 * camera.zoom}px`,
               fontFamily: 'sans-serif',
-              backgroundColor: editingElement.type === 'pin' ? editingElement.color : '#ffffff',
+              backgroundColor: '#ffffff',
               color: '#000000',
               boxSizing: 'border-box',
+              zIndex: 10001,
+              position: 'relative'
             }}
           />
         </div>
       )}
       
       {/* Force focus on textarea when it appears */}
-      {editingTextId && textareaRef.current && (
+      {editingTextId && (
         (() => {
-          setTimeout(() => textareaRef.current?.focus(), 0);
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            textareaRef.current.select();
+          }
           return null;
         })()
       )}
