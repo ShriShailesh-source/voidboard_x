@@ -399,6 +399,7 @@ export default function ExcalidrawClone() {
   const [eraserSize, setEraserSize] = useState(20);
   const [eraserHoverTarget, setEraserHoverTarget] = useState(null);
   const [eraserDragArea, setEraserDragArea] = useState(null);
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
   const isEditingText = useRef(false);
   const needsRender = useRef(true);
   
@@ -1617,7 +1618,9 @@ export default function ExcalidrawClone() {
         </div>
       )}
       
-      <div style={{ position: 'fixed', top: '16px', left: '16px', display: 'flex', gap: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '14px', padding: '10px', backdropFilter: 'blur(12px)', boxShadow: '8px 12px 32px rgba(0,0,0,0.35)' }}>
+      <div style={{ position: 'fixed', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '14px', padding: '10px', backdropFilter: 'blur(12px)', boxShadow: '8px 12px 32px rgba(0,0,0,0.35)' }}>
+        {/* LEFT CONTROL GROUP (collapsible) */}
+        <div style={{ display: controlsCollapsed ? 'none' : 'flex', alignItems: 'center', gap: '8px' }}>
         {/* Undo Button */}
         <button
           onClick={undo}
@@ -1894,25 +1897,6 @@ export default function ExcalidrawClone() {
           {theme === 'dark' ? '🌙' : '☀️'}
         </button>
 
-        {/* History / Snap Panel */}
-        <button
-          onClick={() => setShowHistoryPanel(v => !v)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: showHistoryPanel ? '#3b82f6' : '#18181b',
-            color: showHistoryPanel ? '#fff' : '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title="Show history & snapshots"
-        >
-          📜 Panel
-        </button>
-        
         {/* Tags Button (only show when pin is selected) */}
         {selectedId && elements.find(el => el.id === selectedId)?.type === 'pin' && (
           <button
@@ -1977,6 +1961,46 @@ export default function ExcalidrawClone() {
           </button>
         ))}
         </div>
+        </div>
+
+        {/* RIGHT EDGE CONTROLS (always visible) */}
+        {/* History / Snap Panel */}
+        <button
+          onClick={() => setShowHistoryPanel(v => !v)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #3f3f46',
+            backgroundColor: showHistoryPanel ? '#3b82f6' : '#18181b',
+            color: showHistoryPanel ? '#fff' : '#a1a1aa',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}
+          title="Show history & snapshots"
+        >
+          📜 Panel
+        </button>
+
+        {/* Collapse Toggle */}
+        <button
+          onClick={() => setControlsCollapsed(v => !v)}
+          style={{
+            padding: '8px 10px',
+            borderRadius: '8px',
+            border: '1px solid #3f3f46',
+            backgroundColor: controlsCollapsed ? '#3b82f6' : '#18181b',
+            color: controlsCollapsed ? '#fff' : '#a1a1aa',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}
+          title={controlsCollapsed ? 'Expand controls' : 'Collapse controls to the left'}
+        >
+          {controlsCollapsed ? '⮞' : '⮜'}
+        </button>
       </div>
       
       {/* Eraser Controls */}

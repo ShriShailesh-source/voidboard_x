@@ -50,7 +50,20 @@ npm run build
 - You may see ESLint warnings during development (hooks deps, a11y, unused vars); they don’t block running the app.
 - For best performance, keep many concurrent brush erases moderate; large area operations may take longer.
 
-## Next Steps (Optional)
+<details>
+<summary><strong>Export / Import (PNG & JSON)</strong></summary>
+
+- <strong>Export PNG:</strong> Use the Export panel (if available) to save a PNG snapshot of the current board.
+- <strong>Export JSON:</strong> Save a JSON file of your elements/camera to re-open later.
+- <strong>Import JSON:</strong> Load a previously exported JSON to restore a board state.
+- <strong>Tips:</strong> For cleaner PNGs, zoom to a comfortable level before exporting; transparent backgrounds may be supported depending on your settings.
+
+</details>
+
+<details>
+<summary><strong>Next Steps</strong></summary>
 
 - Add screenshots/GIFs of the board and tools.
 - Expand a shortcuts section (e.g., Undo, export/import, snapshots) if you use those features.
+
+</details>
