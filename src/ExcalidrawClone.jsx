@@ -689,11 +689,11 @@ export default function ExcalidrawClone() {
             
             if (text && !isEditing) {
               ctx.fillStyle = '#fff';
-              ctx.font = '16px sans-serif';
+              ctx.font = '20px sans-serif';
               ctx.textBaseline = 'top';
               const lines = text.split('\n');
               lines.forEach((line, i) => {
-                ctx.fillText(line, x1 + 10, y1 + 10 + i * 20);
+                ctx.fillText(line, x1 + 10, y1 + 10 + i * 24);
               });
             }
           } else if (type === 'image') {
@@ -731,11 +731,11 @@ export default function ExcalidrawClone() {
             
             if (text && !isEditing) {
               ctx.fillStyle = '#000';
-              ctx.font = '14px sans-serif';
+              ctx.font = '18px sans-serif';
               ctx.textBaseline = 'top';
               const lines = text.split('\n');
               lines.forEach((line, i) => {
-                ctx.fillText(line, x1 + 10, y1 + 35 + i * 18, width - 20);
+                ctx.fillText(line, x1 + 10, y1 + 35 + i * 22, width - 20);
               });
             }
             
@@ -1773,7 +1773,7 @@ export default function ExcalidrawClone() {
               padding: '10px',
               resize: 'none',
               outline: 'none',
-              fontSize: `${14 * camera.zoom}px`,
+              fontSize: `${18 * camera.zoom}px`,
               fontFamily: 'sans-serif',
               backgroundColor: '#ffffff',
               color: '#000000',
