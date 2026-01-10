@@ -399,7 +399,7 @@ export default function ExcalidrawClone() {
   const [eraserSize, setEraserSize] = useState(20);
   const [eraserHoverTarget, setEraserHoverTarget] = useState(null);
   const [eraserDragArea, setEraserDragArea] = useState(null);
-  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  const [controlsCollapsed, setControlsCollapsed] = useState(true);
   const isEditingText = useRef(false);
   const needsRender = useRef(true);
   
