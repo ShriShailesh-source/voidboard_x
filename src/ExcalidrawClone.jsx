@@ -424,6 +424,7 @@ export default function ExcalidrawClone() {
   const [eraserHoverTarget, setEraserHoverTarget] = useState(null);
   const [eraserDragArea, setEraserDragArea] = useState(null);
   const [controlsCollapsed, setControlsCollapsed] = useState(true);
+  const [resizeHandle, setResizeHandle] = useState(null); // { corner: 'TL'|'TR'|'BL'|'BR', elementId }
   const isEditingText = useRef(false);
   const needsRender = useRef(true);
   
@@ -865,6 +866,32 @@ export default function ExcalidrawClone() {
       return;
     }
     
+    // Check if clicking on a resize handle
+    if (selectedId && tool === 'select') {
+      const element = elements.find(el => el.id === selectedId);
+      if (element && (element.type === 'text' || element.type === 'image' || element.type === 'pin')) {
+        const bounds = getElementBounds(element);
+        const handleSize = 12 / camera.zoom;
+        const tolerance = handleSize * 1.5;
+        
+        const corners = [
+          { name: 'TL', x: bounds.minX, y: bounds.minY },
+          { name: 'TR', x: bounds.maxX, y: bounds.minY },
+          { name: 'BL', x: bounds.minX, y: bounds.maxY },
+          { name: 'BR', x: bounds.maxX, y: bounds.maxY },
+        ];
+        
+        for (const corner of corners) {
+          if (distance(worldX, worldY, corner.x, corner.y) < tolerance) {
+            setAction('resizing');
+            setResizeHandle({ corner: corner.name, elementId: selectedId });
+            setStartPoint({ worldX, worldY, element: { ...element } });
+            return;
+          }
+        }
+      }
+    }
+    
     if (tool === 'eraser') {
       if (eraserMode === 'point') {
         const clickedElement = [...elements].reverse().find(el => 
@@ -954,6 +981,33 @@ export default function ExcalidrawClone() {
     worldX = maybeSnap(worldX);
     worldY = maybeSnap(worldY);
     
+    // Show resize cursor when hovering over resize handles
+    if (selectedId && tool === 'select') {
+      const element = elements.find(el => el.id === selectedId);
+      if (element && (element.type === 'text' || element.type === 'image' || element.type === 'pin')) {
+        const bounds = getElementBounds(element);
+        const handleSize = 12 / camera.zoom;
+        const tolerance = handleSize * 1.5;
+        
+        const corners = [
+          { name: 'TL', x: bounds.minX, y: bounds.minY, cursor: 'nwse-resize' },
+          { name: 'TR', x: bounds.maxX, y: bounds.minY, cursor: 'nesw-resize' },
+          { name: 'BL', x: bounds.minX, y: bounds.maxY, cursor: 'nesw-resize' },
+          { name: 'BR', x: bounds.maxX, y: bounds.maxY, cursor: 'nwse-resize' },
+        ];
+        
+        let cursorSet = false;
+        for (const corner of corners) {
+          if (distance(worldX, worldY, corner.x, corner.y) < tolerance) {
+            canvas.style.cursor = corner.cursor;
+            cursorSet = true;
+            break;
+          }
+        }
+        if (!cursorSet) canvas.style.cursor = 'default';
+      }
+    }
+    
     if (action === 'panning' && startPoint) {
       const dx = screenX - startPoint.screenX;
       const dy = screenY - startPoint.screenY;
@@ -1019,6 +1073,41 @@ export default function ExcalidrawClone() {
           y2: original.y2 + dy,
         };
       }));
+    }
+    
+    // Handle resizing for text/image/pin elements
+    if (action === 'resizing' && resizeHandle && startPoint) {
+      const original = startPoint.element;
+      const dx = worldX - startPoint.worldX;
+      const dy = worldY - startPoint.worldY;
+      
+      const minSize = 40;
+      let newX1 = original.x1;
+      let newY1 = original.y1;
+      let newX2 = original.x2;
+      let newY2 = original.y2;
+      
+      if (resizeHandle.corner === 'TL') {
+        newX1 = original.x1 + dx;
+        newY1 = original.y1 + dy;
+      } else if (resizeHandle.corner === 'TR') {
+        newX2 = original.x2 + dx;
+        newY1 = original.y1 + dy;
+      } else if (resizeHandle.corner === 'BL') {
+        newX1 = original.x1 + dx;
+        newY2 = original.y2 + dy;
+      } else if (resizeHandle.corner === 'BR') {
+        newX2 = original.x2 + dx;
+        newY2 = original.y2 + dy;
+      }
+      
+      // Enforce minimum size
+      if (newX2 - newX1 > minSize && newY2 - newY1 > minSize) {
+        setElements(prev => prev.map(el => {
+          if (el.id !== resizeHandle.elementId) return el;
+          return { ...el, x1: newX1, y1: newY1, x2: newX2, y2: newY2, width: newX2 - newX1, height: newY2 - newY1 };
+        }));
+      }
     }
     
     // Eraser brush mode - erase parts of freehand strokes
@@ -1088,7 +1177,7 @@ export default function ExcalidrawClone() {
     } else if (eraserHoverTarget) {
       setEraserHoverTarget(null);
     }
-  }, [action, selectedId, startPoint, camera, snapToGrid, tool, eraserMode, eraserSize, elements, eraserHoverTarget]);
+  }, [action, selectedId, startPoint, camera, snapToGrid, tool, eraserMode, eraserSize, elements, eraserHoverTarget, resizeHandle]);
   
   const handlePointerUp = useCallback(() => {
     if (action === 'drawing') {
@@ -1116,6 +1205,7 @@ export default function ExcalidrawClone() {
     
     setAction('none');
     setStartPoint(null);
+    setResizeHandle(null);
   }, [action, eraserDragArea]);
   
   // Double-click to edit pins and text
