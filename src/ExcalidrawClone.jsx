@@ -1619,7 +1619,7 @@ export default function ExcalidrawClone() {
       )}
       
       <div style={{ position: 'fixed', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '14px', padding: '10px', backdropFilter: 'blur(12px)', boxShadow: '8px 12px 32px rgba(0,0,0,0.35)' }}>
-        {/* LEFT CONTROL GROUP (collapsible) */}
+        {/* LEFT HALF (collapsible): everything to the left of the Panel */}
         <div style={{ display: controlsCollapsed ? 'none' : 'flex', alignItems: 'center', gap: '8px' }}>
         {/* Undo Button */}
         <button
@@ -1896,8 +1896,47 @@ export default function ExcalidrawClone() {
         >
           {theme === 'dark' ? '🌙' : '☀️'}
         </button>
+        </div>
 
-        {/* Tags Button (only show when pin is selected) */}
+        {/* PANEL BUTTON (fixed in original spot) */}
+        <button
+          onClick={() => setShowHistoryPanel(v => !v)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #3f3f46',
+            backgroundColor: showHistoryPanel ? '#3b82f6' : '#18181b',
+            color: showHistoryPanel ? '#fff' : '#a1a1aa',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}
+          title="Show history & snapshots"
+        >
+          📜 Panel
+        </button>
+
+        {/* Collapse Toggle for LEFT HALF */}
+        <button
+          onClick={() => setControlsCollapsed(v => !v)}
+          style={{
+            padding: '8px 10px',
+            borderRadius: '8px',
+            border: '1px solid #3f3f46',
+            backgroundColor: controlsCollapsed ? '#3b82f6' : '#18181b',
+            color: controlsCollapsed ? '#fff' : '#a1a1aa',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}
+          title={controlsCollapsed ? 'Expand left controls' : 'Collapse left controls'}
+        >
+          {controlsCollapsed ? '⮞' : '⮜'}
+        </button>
+
+        {/* RIGHT HALF (always visible): Tags + Tools */}
         {selectedId && elements.find(el => el.id === selectedId)?.type === 'pin' && (
           <button
             onClick={() => setShowTagModal(true)}
@@ -1924,7 +1963,6 @@ export default function ExcalidrawClone() {
           </button>
         )}
         
-        {/* Tools */}
         <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '10px', padding: '6px', boxShadow: '8px 8px 18px rgba(0,0,0,0.28), -6px -6px 16px rgba(255,255,255,0.04)' }}>
         {tools.map(({ id, icon: Icon, label }) => (
           <button
@@ -1961,46 +1999,6 @@ export default function ExcalidrawClone() {
           </button>
         ))}
         </div>
-        </div>
-
-        {/* RIGHT EDGE CONTROLS (always visible) */}
-        {/* History / Snap Panel */}
-        <button
-          onClick={() => setShowHistoryPanel(v => !v)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: showHistoryPanel ? '#3b82f6' : '#18181b',
-            color: showHistoryPanel ? '#fff' : '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title="Show history & snapshots"
-        >
-          📜 Panel
-        </button>
-
-        {/* Collapse Toggle */}
-        <button
-          onClick={() => setControlsCollapsed(v => !v)}
-          style={{
-            padding: '8px 10px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: controlsCollapsed ? '#3b82f6' : '#18181b',
-            color: controlsCollapsed ? '#fff' : '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title={controlsCollapsed ? 'Expand controls' : 'Collapse controls to the left'}
-        >
-          {controlsCollapsed ? '⮞' : '⮜'}
-        </button>
       </div>
       
       {/* Eraser Controls */}
