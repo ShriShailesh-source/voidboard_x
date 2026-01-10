@@ -404,8 +404,13 @@ export default function ExcalidrawClone() {
   const isEditingText = useRef(false);
   const needsRender = useRef(true);
   
-  // Auto-save to localStorage when state changes
+  // Force focus textarea when editing
   useEffect(() => {
+    if (editingTextId && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.select();
+    }
+  }, [editingTextId]);
     try {
       const stateToSave = {
         elements,
@@ -1501,11 +1506,11 @@ export default function ExcalidrawClone() {
 
       <canvas
         ref={canvasRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-        onDoubleClick={handleDoubleClick}
+        onPointerDown={editingTextId ? undefined : handlePointerDown}
+        onPointerMove={editingTextId ? undefined : handlePointerMove}
+        onPointerUp={editingTextId ? undefined : handlePointerUp}
+        onPointerLeave={editingTextId ? undefined : handlePointerUp}
+        onDoubleClick={editingTextId ? undefined : handleDoubleClick}
         style={{ 
           touchAction: 'none', 
           cursor: action === 'panning' || tool === 'pan'
@@ -1614,17 +1619,6 @@ export default function ExcalidrawClone() {
             }}
           />
         </div>
-      )}
-      
-      {/* Force focus on textarea when it appears */}
-      {editingTextId && (
-        (() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-            textareaRef.current.select();
-          }
-          return null;
-        })()
       )}
       
       <div style={{ position: 'fixed', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '14px', padding: '10px', backdropFilter: 'blur(12px)', boxShadow: '8px 12px 32px rgba(0,0,0,0.35)' }}>
