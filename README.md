@@ -1,3 +1,52 @@
+# Voidboard
+
+A minimal infinite canvas for quick sketching, flows, and notes.
+
+## Run the Project
+
+Prerequisites:
+- Node.js 16+ and npm
+
+Install and start:
+
+```bash
+npm install
+npm start
+```
+
+This starts the dev server at http://localhost:3000.
+
+Build for production:
+
+```bash
+npm run build
+```
+
+## Approach & Design Decisions
+
+- Canvas-first rendering: Uses the HTML5 Canvas 2D API for all drawing (shapes, freehand, pins, selection, grid) to keep performance predictable and independent of DOM layout.
+- Rough-style shapes: Custom jittered lines for rectangles, ellipses, triangles, and arrows via seeded noise to add a hand-drawn feel while remaining lightweight.
+- Freehand smoothing: Quadratic curves + round caps/joins and light interpolation reduce jitter and ensure strokes start at the pen tip immediately.
+- Camera model: Simple `camera { x, y, zoom }` for panning/zooming; world/screen coordinates converted consistently so tools work at any zoom.
+- Interaction model:
+  - Tools: select, pan, rectangle, ellipse, triangle, arrow, freehand, text, image, pin, eraser.
+  - Panning with mouse drag on empty canvas (grab/grabbing cursor feedback), plus keyboard panning (WASD/arrow keys).
+  - Pins: movable by drag; double-click to edit; tags, color; visual move hint.
+  - Eraser modes: point (delete), brush (partial erase for freehand with live cursor preview), area (rectangle delete).
+- Persistence: Auto-save to `localStorage` (elements, camera, snapshots, theme) and auto-restore on load to make the board resilient to browser restarts.
+- UI & theming: Glassmorphism panels, neumorphic buttons, dark/light theme via CSS variables; radial gradient background; info modal, tutorial overlay, history/snapshots side panel.
+- Export & share: PNG export via `canvas.toDataURL`; JSON import/export for board state; quick share (copy URL).
+- Performance choices:
+  - Render loop gated by `needsRender` to avoid unnecessary draws.
+  - RequestAnimationFrame for cursor preview updates.
+  - Throttled/conditional updates for hover and brush erasing to reduce flicker and re-renders.
+  - Minimal object churn in hot paths; batch operations where practical.
+- Accessibility/UX: Keyboard shortcuts (Ctrl+Z/S/E/H, Esc), hover highlights, cursor previews, clear selection outlines and handles.
+
+## Notes
+- Created with React; canvas logic is centralized in `src/ExcalidrawClone.jsx`.
+- ESLint warnings may appear during development; they do not block running. You can address them incrementally.
+- If you change tool behavior, keep coordinate conversions and camera interactions consistent.
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
