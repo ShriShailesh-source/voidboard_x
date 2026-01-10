@@ -411,6 +411,9 @@ export default function ExcalidrawClone() {
       textareaRef.current.select();
     }
   }, [editingTextId]);
+  
+  // Auto-save to localStorage when state changes
+  useEffect(() => {
     try {
       const stateToSave = {
         elements,
@@ -1582,6 +1585,9 @@ export default function ExcalidrawClone() {
             ref={textareaRef}
             autoFocus
             value={editingElement.text || ''}
+            onFocus={() => {
+              isEditingText.current = true;
+            }}
             onChange={(e) => {
               setElements(prev => prev.map(el =>
                 el.id === editingTextId ? { ...el, text: e.target.value } : el
