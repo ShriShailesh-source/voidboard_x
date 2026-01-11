@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Square, ArrowRight, Pencil, MousePointer2, Type, Pin, Image, Eraser, Undo, Circle, Triangle, Hand } from 'lucide-react';
+import { Type, Pin, Image, Circle, Triangle, Hand } from 'lucide-react';
+import { Toolbar, EraserPanel, ToolsGrid, TextEditing, PenIcon, ArrowIcon, SelectionIcon, EraserIcon, SquareIcon } from './ui';
 
 // ============================================================================
 // UTILITIES
@@ -1028,12 +1029,13 @@ export default function ExcalidrawClone() {
           const lastY = el.points[el.points.length - 1];
           const dist = distance(worldX, worldY, lastX, lastY);
 
-          // Slight smoothing to reduce jitter
-          const alpha = 0.35;
+          // Increased smoothing for cleaner ink
+          const alpha = 0.18; // smaller alpha -> smoother curve
           const smoothX = lastX + (worldX - lastX) * alpha;
           const smoothY = lastY + (worldY - lastY) * alpha;
 
-          if (dist > 2) {
+          // Lower threshold so fine strokes are captured, but still filter tiny jitter
+          if (dist > 1.2) {
             return { ...el, points: [...el.points, smoothX, smoothY] };
           }
           return el;
@@ -1393,17 +1395,17 @@ export default function ExcalidrawClone() {
   } : null;
   
   const tools = [
-    { id: 'select', icon: MousePointer2, label: 'Select' },
+    { id: 'select', icon: SelectionIcon, label: 'Select' },
     { id: 'pan', icon: Hand, label: 'Pan' },
-    { id: 'rectangle', icon: Square, label: 'Rectangle' },
+    { id: 'rectangle', icon: SquareIcon, label: 'Rectangle' },
     { id: 'ellipse', icon: Circle, label: 'Ellipse' },
     { id: 'triangle', icon: Triangle, label: 'Triangle' },
-    { id: 'arrow', icon: ArrowRight, label: 'Arrow' },
-    { id: 'freehand', icon: Pencil, label: 'Draw' },
+    { id: 'arrow', icon: ArrowIcon, label: 'Arrow' },
+    { id: 'freehand', icon: PenIcon, label: 'Draw' },
     { id: 'text', icon: Type, label: 'Text' },
     { id: 'image', icon: Image, label: 'Image' },
     { id: 'pin', icon: Pin, label: 'Pin/Note' },
-    { id: 'eraser', icon: Eraser, label: 'Eraser' },
+    { id: 'eraser', icon: EraserIcon, label: 'Eraser' },
   ];
   
   return (
@@ -1686,649 +1688,74 @@ export default function ExcalidrawClone() {
         </div>
       )}
       
-      {editingTextId && editingElement && editingScreenPos && (
-        <div
-          style={{
-            position: 'fixed',
-            left: `${editingScreenPos.x}px`,
-            top: `${editingScreenPos.y}px`,
-            width: `${editingScreenPos.width}px`,
-            height: `${editingScreenPos.height}px`,
-            zIndex: 10000,
-            pointerEvents: 'auto'
-          }}
-        >
-          <textarea
-            ref={textareaRef}
-            autoFocus
-            value={textValue}
-            onFocus={() => {
-              isEditingText.current = true;
-            }}
-            onChange={(e) => {
-              setTextValue(e.target.value);
-              // Check for "/" command trigger
-              if (e.target.value.endsWith('/')) {
-                setShowCommandMenu(true);
-                setCommandMenuPos({ x: e.target.selectionStart, y: 20 });
-              } else {
-                setShowCommandMenu(false);
-              }
-            }}
-            onMouseUp={(e) => {
-              // Track text selection
-              if (textareaRef.current) {
-                const start = textareaRef.current.selectionStart;
-                const end = textareaRef.current.selectionEnd;
-                if (start !== end) {
-                  setSelectedTextRange({ start, end, text: textValue.slice(start, end) });
-                } else {
-                  setSelectedTextRange(null);
-                }
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.preventDefault();
-                isEditingText.current = false;
-                setShowCommandMenu(false);
-                textareaRef.current?.blur();
-              }
-              // Auto-parse quick dates on space/enter after keywords
-              if ((e.key === ' ' || e.key === 'Enter') && textareaRef.current) {
-                const cursorPos = textareaRef.current.selectionStart;
-                const textBefore = textValue.substring(0, cursorPos);
-                const words = textBefore.trim().split(/\s+/);
-                const lastWord = words[words.length - 1] || '';
-                
-                // Check for date keywords
-                let dateStr = null;
-                if (words.length >= 1) {
-                  const lastTwo = words.slice(-2).join(' ');
-                  if (parseQuickDate(lastTwo)) {
-                    dateStr = parseQuickDate(lastTwo);
-                    setTextValue(textValue.substring(0, cursorPos - lastTwo.length) + dateStr);
-                  } else if (parseQuickDate(lastWord)) {
-                    dateStr = parseQuickDate(lastWord);
-                    setTextValue(textValue.substring(0, cursorPos - lastWord.length) + dateStr);
-                  }
-                }
-              }
-            }}
-            onBlur={(e) => {
-              isEditingText.current = false;
-              const finalText = textValue;
-              setElements(prev => prev.map(el =>
-                el.id === editingTextId ? { ...el, text: finalText, isEditing: false } : el
-              ));
-              setEditingTextId(null);
-              setTextValue('');
-              setSelectedTextRange(null);
-              setShowCommandMenu(false);
-            }}
-            style={{
-              width: '100%',
-              height: '100%',
-              border: '3px solid #3b82f6',
-              padding: '10px',
-              resize: 'none',
-              outline: 'none',
-              fontSize: `${18 * camera.zoom}px`,
-              fontFamily: 'sans-serif',
-              backgroundColor: '#ffffff',
-              color: '#000000',
-              boxSizing: 'border-box',
-              zIndex: 10001,
-              position: 'relative'
-            }}
-          />
-        </div>
-      )}
+      {/* Text Editing Component - Textarea, Highlight Palette, Command Menu */}
+      <TextEditing
+        editingTextId={editingTextId}
+        editingScreenPos={editingScreenPos}
+        textareaRef={textareaRef}
+        textValue={textValue}
+        setTextValue={setTextValue}
+        selectedTextRange={selectedTextRange}
+        setSelectedTextRange={setSelectedTextRange}
+        showCommandMenu={showCommandMenu}
+        setShowCommandMenu={setShowCommandMenu}
+        camera={camera}
+        isEditingText={isEditingText}
+        elements={elements}
+        setElements={setElements}
+        parseQuickDate={parseQuickDate}
+        setEditingTextId={setEditingTextId}
+        commandMenuPos={commandMenuPos}
+        setCommandMenuPos={setCommandMenuPos}
+      />
       
-      {/* Text Highlight Palette (appears when text is selected) */}
-      {editingTextId && selectedTextRange && (
-        <div
-          style={{
-            position: 'fixed',
-            left: `${editingScreenPos.x + 10}px`,
-            top: `${editingScreenPos.y - 50}px`,
-            backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            padding: '8px 4px',
-            display: 'flex',
-            gap: '6px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            zIndex: 10002
-          }}
-        >
-          {[
-            { name: 'Yellow', color: '#fef08a', bg: '#fbbf24' },
-            { name: 'Blue', color: '#bfdbfe', bg: '#3b82f6' },
-            { name: 'Green', color: '#bbf7d0', bg: '#10b981' }
-          ].map(({ name, color, bg }) => (
-            <button
-              key={name}
-              onClick={() => {
-                const before = textValue.substring(0, selectedTextRange.start);
-                const selected = selectedTextRange.text;
-                const after = textValue.substring(selectedTextRange.end);
-                const highlighted = `${selected}`;
-                setTextValue(before + highlighted + after);
-                setSelectedTextRange(null);
-              }}
-              style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '4px',
-                border: '2px solid ' + bg,
-                backgroundColor: color,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              title={name}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            />
-          ))}
-        </div>
-      )}
-      
-      {/* Command Menu (appears after typing /) */}
-      {editingTextId && showCommandMenu && (
-        <div
-          style={{
-            position: 'fixed',
-            left: `${editingScreenPos.x + 20}px`,
-            top: `${editingScreenPos.y + 40}px`,
-            backgroundColor: '#ffffff',
-            border: '1px solid #d1d5db',
-            borderRadius: '8px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-            zIndex: 10002,
-            minWidth: '200px'
-          }}
-        >
-          {[
-            { icon: '# ', label: 'Heading', insert: '\n# ' },
-            { icon: '☐ ', label: 'Checklist', insert: '\n☐ ' },
-            { icon: '─ ', label: 'Divider', insert: '\n─────\n' },
-            { icon: '📅 ', label: 'Date', insert: '\n' + new Date().toLocaleDateString() },
-            { icon: '✏️ ', label: 'Sketch', insert: '\n[Sketch]\n' }
-          ].map(({ icon, label, insert }) => (
-            <button
-              key={label}
-              onClick={() => {
-                const newText = textValue.replace(/\/$/, '') + insert;
-                setTextValue(newText);
-                setShowCommandMenu(false);
-                setTimeout(() => textareaRef.current?.focus(), 0);
-              }}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: 'none',
-                backgroundColor: 'transparent',
-                textAlign: 'left',
-                cursor: 'pointer',
-                transition: 'background 0.2s',
-                borderBottom: '1px solid #f3f4f6',
-                fontSize: '14px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f3f4f6';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              <span style={{ fontWeight: 600, marginRight: '8px' }}>{icon}</span>{label}
-            </button>
-          ))}
-        </div>
-      )}
-      
-      <div style={{ position: 'fixed', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '14px', padding: '10px', backdropFilter: 'blur(12px)', boxShadow: '8px 12px 32px rgba(0,0,0,0.35)' }}>
-        {/* LEFT HALF (collapsible): everything to the left of the Panel */}
-        <div style={{ display: controlsCollapsed ? 'none' : 'flex', alignItems: 'center', gap: '8px' }}>
-        
-        {/* Snapshot Button */}
-        <button
-          onClick={() => setShowSnapshotModal(true)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#27272a';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#18181b';
-            e.currentTarget.style.color = '#a1a1aa';
-          }}
-          title="Save/Load Snapshots (Ctrl+S)"
-        >
-          📸 {snapshots.length}
-        </button>
-        
-        {/* Export Button */}
-        <button
-          onClick={exportToJSON}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#27272a';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#18181b';
-            e.currentTarget.style.color = '#a1a1aa';
-          }}
-          title="Export to JSON (Ctrl+E)"
-        >
-          💾
-        </button>
-        
-        {/* Import Button */}
-        <button
-          onClick={importFromJSON}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#27272a';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#18181b';
-            e.currentTarget.style.color = '#a1a1aa';
-          }}
-          title="Import from JSON (Ctrl+I)"
-        >
-          📂
-        </button>
+      <Toolbar
+        undo={undo}
+        historyIndex={historyIndex}
+        controlsCollapsed={controlsCollapsed}
+        setControlsCollapsed={setControlsCollapsed}
+        showSnapshotModal={showSnapshotModal}
+        setShowSnapshotModal={setShowSnapshotModal}
+        showHistoryPanel={showHistoryPanel}
+        setShowHistoryPanel={setShowHistoryPanel}
+        showTagModal={showTagModal}
+        setShowTagModal={setShowTagModal}
+        showInfoModal={showInfoModal}
+        setShowInfoModal={setShowInfoModal}
+        showTutorial={showTutorial}
+        setShowTutorial={setShowTutorial}
+        snapToGrid={snapToGrid}
+        setSnapToGrid={setSnapToGrid}
+        theme={theme}
+        setTheme={setTheme}
+        exportToJSON={exportToJSON}
+        importFromJSON={importFromJSON}
+        moveLayer={moveLayer}
+        selectedId={selectedId}
+        elements={elements}
+      />
 
-        {/* Export PNG */}
-        <button
-          onClick={() => {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-            const url = canvas.toDataURL('image/png');
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `voidboard-${Date.now()}.png`;
-            a.click();
-          }}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title="Export PNG"
-        >
-          🖼 PNG
-        </button>
-
-        {/* Share link */}
-        <button
-          onClick={() => {
-            const link = window.location.href;
-            if (navigator.clipboard) {
-              navigator.clipboard.writeText(link);
-              alert('Link copied to clipboard');
-            } else {
-              prompt('Copy this link', link);
-            }
-          }}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title="Copy board link"
-        >
-          🔗 Share
-        </button>
-
-        {/* Snap Toggle */}
-        <button
-          onClick={() => setSnapToGrid(v => !v)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: snapToGrid ? '#3b82f6' : '#18181b',
-            color: snapToGrid ? '#fff' : '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title="Snap to grid"
-        >
-          ⬚ Snap
-        </button>
-        
-        {/* Layer Controls */}
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button
-            onClick={() => moveLayer('back')}
-            disabled={!selectedId}
-            style={{
-              padding: '8px',
-              borderRadius: '8px',
-              border: '1px solid #3f3f46',
-              backgroundColor: '#18181b',
-              color: selectedId ? '#a1a1aa' : '#52525b',
-              cursor: selectedId ? 'pointer' : 'not-allowed',
-              transition: 'all 0.2s'
-            }}
-            title="Send to back"
-          >
-            ⬇ Layer
-          </button>
-          <button
-            onClick={() => moveLayer('front')}
-            disabled={!selectedId}
-            style={{
-              padding: '8px',
-              borderRadius: '8px',
-              border: '1px solid #3f3f46',
-              backgroundColor: '#18181b',
-              color: selectedId ? '#a1a1aa' : '#52525b',
-              cursor: selectedId ? 'pointer' : 'not-allowed',
-              transition: 'all 0.2s'
-            }}
-            title="Bring to front"
-          >
-            ⬆ Layer
-          </button>
-        </div>
-        
-        {/* About / Info */}
-        <button
-          onClick={() => setShowInfoModal(true)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-        >
-          ℹ️ Info
-        </button>
-
-        {/* Tutorial */}
-        <button
-          onClick={() => setShowTutorial(true)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-        >
-          ❓ Tutorial
-        </button>
-
-        {/* Theme toggle */}
-        <button
-          onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title="Toggle dark/light"
-        >
-          {theme === 'dark' ? '🌙' : '☀️'}
-        </button>
-        </div>
-
-        {/* PANEL BUTTON (fixed in original spot) */}
-        <button
-          onClick={() => setShowHistoryPanel(v => !v)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: showHistoryPanel ? '#3b82f6' : '#18181b',
-            color: showHistoryPanel ? '#fff' : '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title="Show history & snapshots"
-        >
-          📜 Panel
-        </button>
-
-        {/* Collapse Toggle for LEFT HALF */}
-        <button
-          onClick={() => setControlsCollapsed(v => !v)}
-          style={{
-            padding: '8px 10px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: controlsCollapsed ? '#3b82f6' : '#18181b',
-            color: controlsCollapsed ? '#fff' : '#a1a1aa',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            fontSize: '12px',
-            fontWeight: '600'
-          }}
-          title={controlsCollapsed ? 'Expand left controls' : 'Collapse left controls'}
-        >
-          {controlsCollapsed ? '⮞' : '⮜'}
-        </button>
-
-        {/* Undo Button (RIGHT HALF) */}
-        <button
-          onClick={() => undo()}
-          disabled={historyIndex === 0}
-          style={{
-            padding: '8px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: historyIndex === 0 ? '#52525b' : '#a1a1aa',
-            cursor: historyIndex === 0 ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onMouseEnter={(e) => {
-            if (historyIndex > 0) {
-              e.currentTarget.style.backgroundColor = '#27272a';
-              e.currentTarget.style.color = '#fff';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#18181b';
-            e.currentTarget.style.color = historyIndex === 0 ? '#52525b' : '#a1a1aa';
-          }}
-          title="Undo (Ctrl+Z)"
-        >
-          <Undo size={18} />
-        </button>
-
-        {/* RIGHT HALF (always visible): Tags + Tools */}
-        {selectedId && elements.find(el => el.id === selectedId)?.type === 'pin' && (
-          <button
-            onClick={() => setShowTagModal(true)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid #3f3f46',
-              backgroundColor: '#3b82f6',
-              color: '#fff',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              fontSize: '12px',
-              fontWeight: '600'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#2563eb';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#3b82f6';
-            }}
-            title="Manage Tags"
-          >
-            🏷️ Tags
-          </button>
-        )}
-        
-        <div style={{ display: 'flex', gap: '4px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '10px', padding: '6px', boxShadow: '8px 8px 18px rgba(0,0,0,0.28), -6px -6px 16px rgba(255,255,255,0.04)' }}>
-        {tools.map(({ id, icon: Icon, label }) => (
-          <button
-            key={id}
-            onClick={() => {
-              setTool(id);
-              if (id !== 'select') setSelectedId(null);
-            }}
-            style={{
-              padding: '10px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.04)',
-              cursor: 'pointer',
-              backgroundColor: tool === id ? 'rgba(59,130,246,0.18)' : 'transparent',
-              color: tool === id ? '#fff' : 'var(--panel-text)',
-              transition: 'all 0.2s',
-              boxShadow: '6px 6px 12px rgba(0,0,0,0.25), -6px -6px 12px rgba(255,255,255,0.05)'
-            }}
-            onMouseEnter={(e) => {
-              if (tool !== id) {
-                e.target.style.backgroundColor = '#27272a';
-                e.target.style.color = '#fff';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (tool !== id) {
-                e.target.style.backgroundColor = 'transparent';
-                e.target.style.color = '#a1a1aa';
-              }
-            }}
-            title={label}
-          >
-            <Icon size={18} />
-          </button>
-        ))}
-        </div>
+      <div style={{ position: 'fixed', top: '74px', left: '16px', zIndex: 15 }}>
+        <ToolsGrid
+          tools={tools}
+          tool={tool}
+          setTool={setTool}
+          setSelectedId={setSelectedId}
+          selectedId={selectedId}
+          elements={elements}
+          showTagModal={showTagModal}
+          setShowTagModal={setShowTagModal}
+        />
       </div>
       
-      {/* Eraser Controls */}
-      {tool === 'eraser' && (
-        <div style={{ position: 'fixed', top: '70px', left: '16px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '240px', backdropFilter: 'blur(14px)', boxShadow: '10px 14px 30px rgba(0,0,0,0.32)' }}>
-          <div style={{ color: '#d4d4d8', fontSize: '12px', fontWeight: '700' }}>Eraser Settings</div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ color: '#a1a1aa', fontSize: '12px' }}>Mode</label>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              {[
-                { id: 'point', label: 'Point', desc: 'Click to delete' },
-                { id: 'brush', label: 'Brush', desc: 'Drag to erase' },
-                { id: 'shape', label: 'Area', desc: 'Drag rectangle' }
-              ].map(mode => (
-                <button
-                  key={mode.id}
-                  onClick={() => setEraserMode(mode.id)}
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--panel-border)',
-                    backgroundColor: eraserMode === mode.id ? '#ef4444' : 'transparent',
-                    color: eraserMode === mode.id ? '#fff' : 'var(--panel-text)',
-                    cursor: 'pointer',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    transition: 'all 0.2s'
-                  }}
-                  title={mode.desc}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {(eraserMode === 'brush' || eraserMode === 'shape') && (
-            <label style={{ color: '#a1a1aa', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ minWidth: '70px' }}>Size</span>
-              <input
-                type="range"
-                min="10"
-                max="100"
-                step="5"
-                value={eraserSize}
-                onChange={(e) => setEraserSize(parseInt(e.target.value, 10))}
-                style={{ flex: 1 }}
-              />
-              <span style={{ width: '42px', textAlign: 'right', color: '#d4d4d8' }}>{eraserSize}px</span>
-            </label>
-          )}
-        </div>
-      )}
+      {/* Eraser Controls - UI Component */}
+      <EraserPanel
+        eraserMode={eraserMode}
+        setEraserMode={setEraserMode}
+        eraserSize={eraserSize}
+        setEraserSize={setEraserSize}
+        tool={tool}
+      />
       
       {/* Color & Stroke Picker for Freehand Tool */}
       {tool !== 'select' && tool !== 'eraser' && tool !== 'pan' && (
