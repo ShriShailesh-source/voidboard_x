@@ -1895,36 +1895,6 @@ export default function ExcalidrawClone() {
       <div style={{ position: 'fixed', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '14px', padding: '10px', backdropFilter: 'blur(12px)', boxShadow: '8px 12px 32px rgba(0,0,0,0.35)' }}>
         {/* LEFT HALF (collapsible): everything to the left of the Panel */}
         <div style={{ display: controlsCollapsed ? 'none' : 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* Undo Button */}
-        <button
-          onClick={undo}
-          disabled={historyIndex === 0}
-          style={{
-            padding: '8px',
-            borderRadius: '8px',
-            border: '1px solid #3f3f46',
-            backgroundColor: '#18181b',
-            color: historyIndex === 0 ? '#52525b' : '#a1a1aa',
-            cursor: historyIndex === 0 ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onMouseEnter={(e) => {
-            if (historyIndex > 0) {
-              e.currentTarget.style.backgroundColor = '#27272a';
-              e.currentTarget.style.color = '#fff';
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#18181b';
-            e.currentTarget.style.color = historyIndex === 0 ? '#52525b' : '#a1a1aa';
-          }}
-          title="Undo (Ctrl+Z)"
-        >
-          <Undo size={18} />
-        </button>
         
         {/* Snapshot Button */}
         <button
@@ -2208,6 +2178,37 @@ export default function ExcalidrawClone() {
           title={controlsCollapsed ? 'Expand left controls' : 'Collapse left controls'}
         >
           {controlsCollapsed ? '⮞' : '⮜'}
+        </button>
+
+        {/* Undo Button (RIGHT HALF) */}
+        <button
+          onClick={undo}
+          disabled={historyIndex === 0}
+          style={{
+            padding: '8px',
+            borderRadius: '8px',
+            border: '1px solid #3f3f46',
+            backgroundColor: '#18181b',
+            color: historyIndex === 0 ? '#52525b' : '#a1a1aa',
+            cursor: historyIndex === 0 ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => {
+            if (historyIndex > 0) {
+              e.currentTarget.style.backgroundColor = '#27272a';
+              e.currentTarget.style.color = '#fff';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#18181b';
+            e.currentTarget.style.color = historyIndex === 0 ? '#52525b' : '#a1a1aa';
+          }}
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo size={18} />
         </button>
 
         {/* RIGHT HALF (always visible): Tags + Tools */}
