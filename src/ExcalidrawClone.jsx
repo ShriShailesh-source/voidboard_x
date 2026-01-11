@@ -2182,7 +2182,7 @@ export default function ExcalidrawClone() {
 
         {/* Undo Button (RIGHT HALF) */}
         <button
-          onClick={undo}
+          onClick={() => undo()}
           disabled={historyIndex === 0}
           style={{
             padding: '8px',
