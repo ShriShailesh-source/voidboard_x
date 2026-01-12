@@ -1355,14 +1355,20 @@ export default function ExcalidrawClone() {
         setShowHistoryPanel(v => !v);
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
-        e.preventDefault();
-        const step = 120 / camera.zoom;
-        setCamera((prev) => {
-          if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') return { ...prev, y: prev.y - step };
-          if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') return { ...prev, y: prev.y + step };
-          if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') return { ...prev, x: prev.x - step };
-          return { ...prev, x: prev.x + step };
-        });
+        // Don't pan if editing text or if any input element has focus
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement?.tagName === 'TEXTAREA' || activeElement?.tagName === 'INPUT';
+        
+        if (!editingTextId && !isInputFocused) {
+          e.preventDefault();
+          const step = 120 / camera.zoom;
+          setCamera((prev) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') return { ...prev, y: prev.y - step };
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') return { ...prev, y: prev.y + step };
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') return { ...prev, x: prev.x - step };
+            return { ...prev, x: prev.x + step };
+          });
+        }
       }
       if (e.key === 'Escape') {
         if (editingTextId) {
