@@ -1108,7 +1108,7 @@ export default function ExcalidrawClone() {
           return el;
         }
         
-        return { ...el, x2: worldX, y2: worldY };
+        return { ...el, x2: maybeSnap(worldX), y2: maybeSnap(worldY) };
       }));
     }
     
@@ -1131,15 +1131,15 @@ export default function ExcalidrawClone() {
         }
         
         if (el.type === 'text' || el.type === 'image' || el.type === 'pin') {
-          return { ...el, x1: original.x1 + dx, y1: original.y1 + dy };
+          return { ...el, x1: maybeSnap(original.x1 + dx), y1: maybeSnap(original.y1 + dy) };
         }
         
         return {
           ...el,
-          x1: original.x1 + dx,
-          y1: original.y1 + dy,
-          x2: original.x2 + dx,
-          y2: original.y2 + dy,
+          x1: maybeSnap(original.x1 + dx),
+          y1: maybeSnap(original.y1 + dy),
+          x2: maybeSnap(original.x2 + dx),
+          y2: maybeSnap(original.y2 + dy),
         };
       }));
     }
@@ -1158,17 +1158,17 @@ export default function ExcalidrawClone() {
       let newY2 = original.y2;
       
       if (resizeHandle.corner === 'TL') {
-        newX1 = original.x1 + dx;
-        newY1 = original.y1 + dy;
+        newX1 = maybeSnap(original.x1 + dx);
+        newY1 = maybeSnap(original.y1 + dy);
       } else if (resizeHandle.corner === 'TR') {
-        newX2 = original.x2 + dx;
-        newY1 = original.y1 + dy;
+        newX2 = maybeSnap(original.x2 + dx);
+        newY1 = maybeSnap(original.y1 + dy);
       } else if (resizeHandle.corner === 'BL') {
-        newX1 = original.x1 + dx;
-        newY2 = original.y2 + dy;
+        newX1 = maybeSnap(original.x1 + dx);
+        newY2 = maybeSnap(original.y2 + dy);
       } else if (resizeHandle.corner === 'BR') {
-        newX2 = original.x2 + dx;
-        newY2 = original.y2 + dy;
+        newX2 = maybeSnap(original.x2 + dx);
+        newY2 = maybeSnap(original.y2 + dy);
       }
       
       // Enforce minimum size
@@ -1355,14 +1355,20 @@ export default function ExcalidrawClone() {
         setShowHistoryPanel(v => !v);
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
-        e.preventDefault();
-        const step = 120 / camera.zoom;
-        setCamera((prev) => {
-          if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') return { ...prev, y: prev.y - step };
-          if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') return { ...prev, y: prev.y + step };
-          if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') return { ...prev, x: prev.x - step };
-          return { ...prev, x: prev.x + step };
-        });
+        // Don't pan if editing text or if any input element has focus
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement?.tagName === 'TEXTAREA' || activeElement?.tagName === 'INPUT';
+        
+        if (!editingTextId && !isInputFocused) {
+          e.preventDefault();
+          const step = 120 / camera.zoom;
+          setCamera((prev) => {
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') return { ...prev, y: prev.y - step };
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') return { ...prev, y: prev.y + step };
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') return { ...prev, x: prev.x - step };
+            return { ...prev, x: prev.x + step };
+          });
+        }
       }
       if (e.key === 'Escape') {
         if (editingTextId) {
