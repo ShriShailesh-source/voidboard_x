@@ -1759,7 +1759,7 @@ export default function ExcalidrawClone() {
       
       {/* Color & Stroke Picker for Freehand Tool */}
       {tool !== 'select' && tool !== 'eraser' && tool !== 'pan' && (
-        <div style={{ position: 'fixed', top: '70px', left: '16px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '220px', backdropFilter: 'blur(14px)', boxShadow: '10px 14px 30px rgba(0,0,0,0.32)' }}>
+        <div style={{ position: 'fixed', top: '200px', left: '16px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--panel-border)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '220px', backdropFilter: 'blur(14px)', boxShadow: '10px 14px 30px rgba(0,0,0,0.32)' }}>
           <div style={{ color: '#d4d4d8', fontSize: '12px', fontWeight: '700' }}>Appearance</div>
           <label style={{ color: '#a1a1aa', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ minWidth: '70px' }}>Color</span>
