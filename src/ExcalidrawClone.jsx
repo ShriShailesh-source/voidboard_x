@@ -1108,7 +1108,7 @@ export default function ExcalidrawClone() {
           return el;
         }
         
-        return { ...el, x2: worldX, y2: worldY };
+        return { ...el, x2: maybeSnap(worldX), y2: maybeSnap(worldY) };
       }));
     }
     
@@ -1131,15 +1131,15 @@ export default function ExcalidrawClone() {
         }
         
         if (el.type === 'text' || el.type === 'image' || el.type === 'pin') {
-          return { ...el, x1: original.x1 + dx, y1: original.y1 + dy };
+          return { ...el, x1: maybeSnap(original.x1 + dx), y1: maybeSnap(original.y1 + dy) };
         }
         
         return {
           ...el,
-          x1: original.x1 + dx,
-          y1: original.y1 + dy,
-          x2: original.x2 + dx,
-          y2: original.y2 + dy,
+          x1: maybeSnap(original.x1 + dx),
+          y1: maybeSnap(original.y1 + dy),
+          x2: maybeSnap(original.x2 + dx),
+          y2: maybeSnap(original.y2 + dy),
         };
       }));
     }
@@ -1158,17 +1158,17 @@ export default function ExcalidrawClone() {
       let newY2 = original.y2;
       
       if (resizeHandle.corner === 'TL') {
-        newX1 = original.x1 + dx;
-        newY1 = original.y1 + dy;
+        newX1 = maybeSnap(original.x1 + dx);
+        newY1 = maybeSnap(original.y1 + dy);
       } else if (resizeHandle.corner === 'TR') {
-        newX2 = original.x2 + dx;
-        newY1 = original.y1 + dy;
+        newX2 = maybeSnap(original.x2 + dx);
+        newY1 = maybeSnap(original.y1 + dy);
       } else if (resizeHandle.corner === 'BL') {
-        newX1 = original.x1 + dx;
-        newY2 = original.y2 + dy;
+        newX1 = maybeSnap(original.x1 + dx);
+        newY2 = maybeSnap(original.y2 + dy);
       } else if (resizeHandle.corner === 'BR') {
-        newX2 = original.x2 + dx;
-        newY2 = original.y2 + dy;
+        newX2 = maybeSnap(original.x2 + dx);
+        newY2 = maybeSnap(original.y2 + dy);
       }
       
       // Enforce minimum size
