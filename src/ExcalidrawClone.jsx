@@ -1,9 +1,12 @@
+'use client'
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Type, Pin, Image, Circle, Triangle, Hand } from 'lucide-react';
 import { Toolbar, EraserPanel, ToolsGrid, TextEditing, PenIcon, ArrowIcon, SelectionIcon, EraserIcon, SquareIcon } from './ui';
 
 // ============================================================================
-// UTILITIES
+// SECTION 1: UTILITY FUNCTIONS
+// Purpose: Helper functions for math, drawing, and element management
 // ============================================================================
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -55,6 +58,11 @@ const parseQuickDate = (text) => {
   return null;
 };
 
+// ============================================================================
+// SECTION 2: COORDINATE SYSTEM & GEOMETRY
+// Purpose: Transform between screen and world coordinates, calculate distances
+// ============================================================================
+
 // Convert screen coordinates to world coordinates
 const screenToWorld = (screenX, screenY, camera) => ({
   x: (screenX - camera.x) / camera.zoom,
@@ -99,6 +107,9 @@ const isPointNearLine = (px, py, x1, y1, x2, y2, threshold = 5) => {
 
 // ============================================================================
 // HAND-DRAWN RENDERING
+// ============================================================================
+// SECTION 3: DRAWING FUNCTIONS  
+// Purpose: Render elements with hand-drawn "rough" aesthetic
 // ============================================================================
 
 const drawRoughLine = (ctx, x1, y1, x2, y2, seed = 0) => {
@@ -262,6 +273,8 @@ const createElement = (type, x1, y1, x2 = null, y2 = null, color = '#ffffff', st
     element.text = '';
     element.width = 200;
     element.height = 40;
+    element.x2 = element.x1 + 200;
+    element.y2 = element.y1 + 40;
     element.isEditing = true;
   }
   
@@ -277,8 +290,11 @@ const createElement = (type, x1, y1, x2 = null, y2 = null, color = '#ffffff', st
     element.opacity = opacity;
     element.width = 150;
     element.height = 150;
+    element.x2 = element.x1 + 150;
+    element.y2 = element.y1 + 150;
     element.isEditing = true;
     element.tags = [];
+    element.imageData = null;
   }
   
   return element;
@@ -372,6 +388,9 @@ export default function ExcalidrawClone() {
   
   // Load persisted state from localStorage
   const loadPersistedState = () => {
+    if (typeof window === 'undefined') {
+      return { elements: [], camera: { x: 0, y: 0, zoom: 1 }, snapshots: [], theme: 'dark' };
+    }
     try {
       const saved = localStorage.getItem('voidboard-state');
       if (saved) {
@@ -389,16 +408,15 @@ export default function ExcalidrawClone() {
     return { elements: [], camera: { x: 0, y: 0, zoom: 1 }, snapshots: [], theme: 'dark' };
   };
   
-  const persistedState = loadPersistedState();
-  
-  const [elements, setElements] = useState(persistedState.elements);
-  const [history, setHistory] = useState([persistedState.elements]);
+  // Initialize with empty state to avoid hydration mismatch
+  const [elements, setElements] = useState([]);
+  const [history, setHistory] = useState([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [tool, setTool] = useState('select');
   const [strokeColor, setStrokeColor] = useState('#ffffff');
   const [strokeOpacity, setStrokeOpacity] = useState(1);
   const [strokeWidth, setStrokeWidth] = useState(2);
-  const [camera, setCamera] = useState(persistedState.camera);
+  const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
   const [action, setAction] = useState('none');
   const [selectedId, setSelectedId] = useState(null);
   const [startPoint, setStartPoint] = useState(null);
@@ -407,7 +425,7 @@ export default function ExcalidrawClone() {
   const [selectedTextRange, setSelectedTextRange] = useState(null);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [commandMenuPos, setCommandMenuPos] = useState(null);
-  const [snapshots, setSnapshots] = useState(persistedState.snapshots);
+  const [snapshots, setSnapshots] = useState([]);
   const [showSnapshotModal, setShowSnapshotModal] = useState(false);
   const [snapshotName, setSnapshotName] = useState('');
   const [showTagModal, setShowTagModal] = useState(false);
@@ -419,7 +437,7 @@ export default function ExcalidrawClone() {
   const [allTags, setAllTags] = useState([]);
   const [showLanding, setShowLanding] = useState(true);
   const [snapToGrid, setSnapToGrid] = useState(false);
-  const [theme, setTheme] = useState(persistedState.theme);
+  const [theme, setTheme] = useState('dark');
   const [eraserMode, setEraserMode] = useState('point'); // point, brush, shape
   const [eraserSize, setEraserSize] = useState(20);
   const [eraserHoverTarget, setEraserHoverTarget] = useState(null);
@@ -428,6 +446,16 @@ export default function ExcalidrawClone() {
   const [resizeHandle, setResizeHandle] = useState(null); // { corner: 'TL'|'TR'|'BL'|'BR', elementId }
   const isEditingText = useRef(false);
   const needsRender = useRef(true);
+  
+  // Load persisted state after mount to avoid hydration mismatch
+  useEffect(() => {
+    const persistedState = loadPersistedState();
+    setElements(persistedState.elements);
+    setHistory([persistedState.elements]);
+    setCamera(persistedState.camera);
+    setSnapshots(persistedState.snapshots);
+    setTheme(persistedState.theme);
+  }, []);
   
   // Force focus textarea when editing
   useEffect(() => {
@@ -443,6 +471,7 @@ export default function ExcalidrawClone() {
   
   // Auto-save to localStorage when state changes
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     try {
       const stateToSave = {
         elements,
@@ -474,6 +503,15 @@ export default function ExcalidrawClone() {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
       setElements(history[historyIndex - 1]);
+      setSelectedId(null);
+    }
+  }, [historyIndex, history]);
+
+  // Redo function
+  const redo = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setElements(history[historyIndex + 1]);
       setSelectedId(null);
     }
   }, [historyIndex, history]);
@@ -718,10 +756,24 @@ export default function ExcalidrawClone() {
             }
           } else if (type === 'pin') {
             const pinOpacity = opacity ?? 1;
-            ctx.fillStyle = 'rgba(0,0,0,0.1)';
-            ctx.fillRect(x1 + 3, y1 + 3, width, height);
-            ctx.fillStyle = hexToRgba(color || '#fbbf24', pinOpacity);
-            ctx.fillRect(x1, y1, width, height);
+            
+            // Draw image if available
+            if (imageData) {
+              const img = new window.Image();
+              img.src = imageData;
+              ctx.drawImage(img, x1, y1, width, height);
+              
+              // Semi-transparent overlay
+              ctx.fillStyle = 'rgba(0,0,0,0.15)';
+              ctx.fillRect(x1, y1, width, height);
+            } else {
+              // Default colored background
+              ctx.fillStyle = 'rgba(0,0,0,0.1)';
+              ctx.fillRect(x1 + 3, y1 + 3, width, height);
+              ctx.fillStyle = hexToRgba(color || '#fbbf24', pinOpacity);
+              ctx.fillRect(x1, y1, width, height);
+            }
+            
             ctx.strokeStyle = 'rgba(0,0,0,0.1)';
             ctx.lineWidth = 1;
             ctx.strokeRect(x1, y1, width, height);
@@ -731,13 +783,24 @@ export default function ExcalidrawClone() {
             ctx.fill();
             
             if (text && !isEditing) {
-              ctx.fillStyle = '#000';
+              ctx.fillStyle = imageData ? '#fff' : '#000';
               ctx.font = '18px sans-serif';
               ctx.textBaseline = 'top';
+              // Add text shadow for better readability on images
+              if (imageData) {
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 1;
+              }
               const lines = text.split('\n');
               lines.forEach((line, i) => {
                 ctx.fillText(line, x1 + 10, y1 + 35 + i * 22, width - 20);
               });
+              if (imageData) {
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+              }
             }
             
             // Draw tags
@@ -938,6 +1001,10 @@ export default function ExcalidrawClone() {
         if (clickedElement.type === 'image' && !clickedElement.imageData) {
           fileInputRef.current?.click();
         }
+        // Allow clicking on pin to upload image
+        if (clickedElement.type === 'pin' && !clickedElement.imageData) {
+          fileInputRef.current?.click();
+        }
       } else {
         // Background drag: start panning when clicking empty space
         setSelectedId(null);
@@ -1083,7 +1150,8 @@ export default function ExcalidrawClone() {
       const dx = worldX - startPoint.worldX;
       const dy = worldY - startPoint.worldY;
       
-      const minSize = 40;
+      // Minimum size - larger for image pins
+      const minSize = (original.type === 'pin' && original.imageData) ? 100 : 40;
       let newX1 = original.x1;
       let newY1 = original.y1;
       let newX2 = original.x2;
@@ -1262,6 +1330,14 @@ export default function ExcalidrawClone() {
         e.preventDefault();
         undo();
       }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        redo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        redo();
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         setShowSnapshotModal(true);
@@ -1313,7 +1389,7 @@ export default function ExcalidrawClone() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, exportToJSON, importFromJSON, editingTextId, showSnapshotModal, showTagModal, showTutorial, camera.zoom, selectedId]);
+  }, [undo, redo, exportToJSON, importFromJSON, editingTextId, showSnapshotModal, showTagModal, showTutorial, camera.zoom, selectedId]);
   
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -1711,7 +1787,9 @@ export default function ExcalidrawClone() {
       
       <Toolbar
         undo={undo}
+        redo={redo}
         historyIndex={historyIndex}
+        history={history}
         controlsCollapsed={controlsCollapsed}
         setControlsCollapsed={setControlsCollapsed}
         showSnapshotModal={showSnapshotModal}
@@ -1818,6 +1896,7 @@ export default function ExcalidrawClone() {
             <div><span style={{ color: '#71717a' }}>•</span> Arrow keys / WASD to pan</div>
             <div><span style={{ color: '#71717a' }}>•</span> <kbd style={{ padding: '2px 4px', backgroundColor: '#27272a', borderRadius: '3px', color: '#d4d4d8' }}>Scroll</kbd> to zoom</div>
             <div><span style={{ color: '#71717a' }}>•</span> <kbd style={{ padding: '2px 4px', backgroundColor: '#27272a', borderRadius: '3px', color: '#d4d4d8' }}>Ctrl+Z</kbd> to undo</div>
+            <div><span style={{ color: '#71717a' }}>•</span> <kbd style={{ padding: '2px 4px', backgroundColor: '#27272a', borderRadius: '3px', color: '#d4d4d8' }}>Ctrl+Y</kbd> to redo</div>
             <div><span style={{ color: '#71717a' }}>•</span> <kbd style={{ padding: '2px 4px', backgroundColor: '#27272a', borderRadius: '3px', color: '#d4d4d8' }}>Ctrl+S</kbd> save snapshot</div>
             <div><span style={{ color: '#71717a' }}>•</span> <kbd style={{ padding: '2px 4px', backgroundColor: '#27272a', borderRadius: '3px', color: '#d4d4d8' }}>Ctrl+E</kbd> export JSON</div>
             <div><span style={{ color: '#71717a' }}>•</span> Click eraser then click elements to delete</div>

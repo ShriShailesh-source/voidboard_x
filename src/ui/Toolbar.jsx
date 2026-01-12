@@ -1,10 +1,12 @@
 import React from 'react';
-import { Undo } from 'lucide-react';
+import { Undo, Redo } from 'lucide-react';
 import { buttonStyles, iconButtonStyles } from './styles';
 
 export const Toolbar = ({
   undo,
+  redo,
   historyIndex,
+  history,
   controlsCollapsed,
   setControlsCollapsed,
   showSnapshotModal,
@@ -205,6 +207,18 @@ export const Toolbar = ({
         title="Undo (Ctrl+Z)"
       >
         <Undo size={18} />
+      </button>
+
+      {/* Redo Button */}
+      <button
+        onClick={() => redo()}
+        disabled={historyIndex >= history.length - 1}
+        style={{...iconButtonStyles.base, color: historyIndex >= history.length - 1 ? '#52525b' : '#a1a1aa', cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'}}
+        onMouseEnter={(e) => historyIndex < history.length - 1 && Object.assign(e.currentTarget.style, {backgroundColor: '#27272a', color: '#fff'})}
+        onMouseLeave={(e) => Object.assign(e.currentTarget.style, {backgroundColor: '#18181b', color: historyIndex >= history.length - 1 ? '#52525b' : '#a1a1aa'})}
+        title="Redo (Ctrl+Y or Ctrl+Shift+Z)"
+      >
+        <Redo size={18} />
       </button>
     </div>
   );

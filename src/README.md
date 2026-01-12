@@ -1,33 +1,34 @@
-# Voidboard (src)
+# Voidboard
 
-A lightweight, canvas-first whiteboard clone focused on smooth drawing, intuitive panning, and fast erasing.
+A lightweight, canvas-first whiteboard clone built with **Next.js** and React. Features smooth drawing, intuitive panning, fast erasing, and powerful collaboration tools.
 
 ## Getting Started
 
-- **Prerequisites:** Install Node.js (LTS recommended).
-- **Install deps:**
+### Prerequisites
+- Node.js 18+ (LTS recommended)
+
+### Installation
 
 ```bash
 npm install
 ```
 
-- **Run dev server:**
+### Development Server
 
 ```bash
-npm start
+npm run dev
 ```
 
-- The app serves at http://localhost:3000.
+The app will be available at [http://localhost:3000](http://localhost:3000)
 
-## Build
-
-- **Production build:**
+### Production Build
 
 ```bash
 npm run build
+npm start
 ```
 
-- Outputs optimized assets under `build/`.
+Outputs optimized assets under `.next/` directory.
 
 ## Key Features
 
@@ -41,13 +42,20 @@ npm run build
 ## Approach & Design Decisions
 
 ### Architecture
+- **Next.js Framework:** App Router (Next.js 15+) with React Server Components and Client Components.
 - **Canvas-First:** Uses HTML5 Canvas for all rendering, ensuring smooth performance and pixel-perfect control.
-- **State Management:** Single React component with `useState` hooks for simplicity; no Redux needed for this use case.
+- **State Management:** Client-side `useState` hooks for simplicity; no Redux needed for this use case.
 - **Immediate Feedback:** Drawing occurs directly on canvas during mouse move events, then synced to the elements array for persistence.
 
 ### Key Design Choices
 
-**1. Camera & Viewport System**
+**1. Next.js App Router**
+- Modern file-based routing with `app/` directory structure.
+- Server Components for static content, Client Components (`'use client'`) for interactive canvas.
+- Optimized builds with automatic code splitting and lazy loading.
+- Ready for deployment to Vercel or any Node.js hosting platform.
+
+**2. Camera & Viewport System**
 - Decoupled camera (pan/zoom) from elements; transform applied during render.
 - Screen ↔ World coordinate conversion allows intuitive interactions at any zoom level.
 - Pan via Shift+Drag, Arrow keys, or WASD; zoom with Scroll wheel.
@@ -79,23 +87,48 @@ npm run build
 - **Keyboard Shortcuts:** Delete, Ctrl+Z (undo), Ctrl+S (snapshot), Ctrl+E (export).
 
 ### Why These Decisions?
+- **Next.js over CRA:** Modern build tool with better performance, automatic optimizations, and deployment-ready structure.
 - **Canvas over DOM:** Better performance for drawing-heavy apps; GPU acceleration for transformations.
 - **State in React:** Keeps UI and data synchronized; hooks are sufficient for this app's complexity.
 - **Tool-based UI:** Users intuitively understand "select a tool, then interact," matching Excalidraw/Figma patterns.
 - **localStorage Persistence:** No server needed; offline-first user experience.
 
-## Project Structure (src)
+## Project Structure
 
-- `App.js`, `App.css` — App shell and styles
-- `ExcalidrawClone.jsx` — Main canvas, tools, camera, interactions, render loop
-- `ui/` — Reusable UI components (Toolbar, ToolsGrid, EraserPanel, TextEditing, etc.)
-- `index.js`, `index.css` — Entry point and global styles
-- `reportWebVitals.js`, `setupTests.js`, `App.test.js` — CRA defaults/testing
+```
+voidboard/
+├── app/                    # Next.js App Router
+│   ├── layout.js          # Root layout with metadata
+│   ├── page.js            # Home page (renders ExcalidrawClone)
+│   └── globals.css        # Global styles
+├── components/            # React components
+│   ├── ExcalidrawClone.jsx  # Main canvas component (client-side)
+│   └── ui/                # Reusable UI components
+│       ├── Toolbar.jsx
+│       ├── ToolsGrid.jsx
+│       ├── EraserPanel.jsx
+│       ├── TextEditing.jsx
+│       └── ...
+├── src/                   # Legacy CRA files (can be removed)
+├── next.config.js         # Next.js configuration
+└── package.json           # Dependencies and scripts
+```
 
 ## Notes
 
-- You may see ESLint warnings during development (hooks deps, a11y, unused vars); they don't block running the app.
+- ESLint warnings during development (hooks deps, a11y) don't block the app.
 - Performance is smooth up to ~500–1000 elements; beyond that, consider spatial partitioning or WebGL.
+- The `src/` directory contains legacy Create React App files and can be removed after confirming the Next.js migration works.
+
+## Migration from CRA to Next.js
+
+This project was converted from Create React App to Next.js for:
+- ✅ Faster builds and development server
+- ✅ Better production optimizations
+- ✅ Modern App Router architecture
+- ✅ Deployment-ready for Vercel/serverless platforms
+
+**To complete cleanup:** Delete the `src/` folder and `public/` CRA files after testing.
 - For best performance, keep many concurrent brush erases moderate; large area operations may take longer.
 
 <details>

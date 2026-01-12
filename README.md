@@ -1,119 +1,151 @@
 # Voidboard
 
-A minimal infinite canvas for quick sketching, flows, and notes.
+A lightweight, canvas-first whiteboard clone built with **Next.js** and React. Features smooth drawing, intuitive panning, fast erasing, and powerful collaboration tools.
 
-## Run the Project
+## Getting Started
 
-Prerequisites:
-- Node.js 16+ and npm
+### Prerequisites
+- Node.js 18+ (LTS recommended)
 
-Install and start:
+### Installation
 
 ```bash
 npm install
-npm start
 ```
 
-This starts the dev server at http://localhost:3000.
+### Development Server
 
-Build for production:
+```bash
+npm run dev
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000)
+
+### Production Build
 
 ```bash
 npm run build
+npm start
 ```
+
+Outputs optimized assets under `.next/` directory.
+
+## Key Features
+
+- **Click‑drag Panning:** In Select mode, drag empty canvas to move the board. Cursor changes to grab/grabbing.
+- **Pen Cursor & Smooth Strokes:** Custom pen cursor; smoothed freehand with immediate ink at the tip.
+- **Eraser Modes:** Point (delete target), Brush (erase within radius), Area (rectangle delete) with visual feedback and size control.
+- **Pins & Text Editing:** Drop pins, drag to reposition, double‑click to edit text.
+- **Persistence:** Automatically saves elements, camera, snapshots, and theme to `localStorage`; restores on load.
+- **Keyboard Delete:** `Delete`/`Backspace` removes the currently selected element (outside of text editing).
 
 ## Approach & Design Decisions
 
-- Canvas-first rendering: Uses the HTML5 Canvas 2D API for all drawing (shapes, freehand, pins, selection, grid) to keep performance predictable and independent of DOM layout.
-- Rough-style shapes: Custom jittered lines for rectangles, ellipses, triangles, and arrows via seeded noise to add a hand-drawn feel while remaining lightweight.
-- Freehand smoothing: Quadratic curves + round caps/joins and light interpolation reduce jitter and ensure strokes start at the pen tip immediately.
-- Camera model: Simple `camera { x, y, zoom }` for panning/zooming; world/screen coordinates converted consistently so tools work at any zoom.
-- Interaction model:
-  - Tools: select, pan, rectangle, ellipse, triangle, arrow, freehand, text, image, pin, eraser.
-  - Panning with mouse drag on empty canvas (grab/grabbing cursor feedback), plus keyboard panning (WASD/arrow keys).
-  - Pins: movable by drag; double-click to edit; tags, color; visual move hint.
-  - Eraser modes: point (delete), brush (partial erase for freehand with live cursor preview), area (rectangle delete).
-- Persistence: Auto-save to `localStorage` (elements, camera, snapshots, theme) and auto-restore on load to make the board resilient to browser restarts.
-- UI & theming: Glassmorphism panels, neumorphic buttons, dark/light theme via CSS variables; radial gradient background; info modal, tutorial overlay, history/snapshots side panel.
-- Export & share: PNG export via `canvas.toDataURL`; JSON import/export for board state; quick share (copy URL).
-- Performance choices:
-  - Render loop gated by `needsRender` to avoid unnecessary draws.
-  - RequestAnimationFrame for cursor preview updates.
-  - Throttled/conditional updates for hover and brush erasing to reduce flicker and re-renders.
-  - Minimal object churn in hot paths; batch operations where practical.
-- Accessibility/UX: Keyboard shortcuts (Ctrl+Z/S/E/H, Esc), hover highlights, cursor previews, clear selection outlines and handles.
+### Architecture
+- **Next.js Framework:** App Router (Next.js 15+) with React Server Components and Client Components.
+- **Canvas-First:** Uses HTML5 Canvas for all rendering, ensuring smooth performance and pixel-perfect control.
+- **State Management:** Client-side `useState` hooks for simplicity; no Redux needed for this use case.
+- **Immediate Feedback:** Drawing occurs directly on canvas during mouse move events, then synced to the elements array for persistence.
+
+### Key Design Choices
+
+**1. Next.js App Router**
+- Modern file-based routing with `app/` directory structure.
+- Server Components for static content, Client Components (`'use client'`) for interactive canvas.
+- Optimized builds with automatic code splitting and lazy loading.
+- Ready for deployment to Vercel or any Node.js hosting platform.
+
+**2. Camera & Viewport System**
+- Decoupled camera (pan/zoom) from elements; transform applied during render.
+- Screen ↔ World coordinate conversion allows intuitive interactions at any zoom level.
+- Pan via Shift+Drag, Arrow keys, or WASD; zoom with Scroll wheel.
+
+**2. Tool Architecture**
+- Modular tool system: `pen`, `arrow`, `rectangle`, `circle`, `triangle`, `text`, `image`, `pin`, `select`, `eraser`, `pan`.
+- Each tool has dedicated state (`strokeColor`, `strokeWidth`, `strokeOpacity`) and visual feedback.
+- Tool UI panels positioned dynamically to avoid overlapping (Appearance panel, Eraser Panel, ToolsGrid).
+
+**3. Eraser Modes**
+- **Point:** Click to delete single element with confirmation dialog.
+- **Brush:** Drag to erase all elements within radius; real-time visual feedback.
+- **Area:** Drag rectangle to delete multiple elements; useful for bulk cleanup.
+
+**4. Rendering Optimization**
+- Only visible elements render; camera bounds check prevents off-canvas drawing from impacting performance.
+- Shapes use seeded randomness for consistent "roughness" (hand-drawn look).
+- Stroke smoothing via point averaging for pen tool.
+
+**5. Persistence & State**
+- Auto-saves to `localStorage`: elements, camera position, UI state (theme, snapshots).
+- Snapshot feature for quick save/restore checkpoints.
+- History tracking with undo support (Ctrl+Z).
+
+**6. Interactions**
+- **Text Editing:** Double-click text/pins to edit inline; Esc to finish.
+- **Layer Controls:** Bring to front / send to back for element ordering.
+- **Selection:** Click to select; visual outline shows selection state.
+- **Keyboard Shortcuts:** Delete, Ctrl+Z (undo), Ctrl+S (snapshot), Ctrl+E (export).
+
+### Why These Decisions?
+- **Next.js over CRA:** Modern build tool with better performance, automatic optimizations, and deployment-ready structure.
+- **Canvas over DOM:** Better performance for drawing-heavy apps; GPU acceleration for transformations.
+- **State in React:** Keeps UI and data synchronized; hooks are sufficient for this app's complexity.
+- **Tool-based UI:** Users intuitively understand "select a tool, then interact," matching Excalidraw/Figma patterns.
+- **localStorage Persistence:** No server needed; offline-first user experience.
+
+## Project Structure
+
+```
+voidboard/
+├── app/                    # Next.js App Router
+│   ├── layout.js          # Root layout with metadata
+│   ├── page.js            # Home page (renders ExcalidrawClone)
+│   └── globals.css        # Global styles
+├── components/            # React components
+│   ├── ExcalidrawClone.jsx  # Main canvas component (client-side)
+│   └── ui/                # Reusable UI components
+│       ├── Toolbar.jsx
+│       ├── ToolsGrid.jsx
+│       ├── EraserPanel.jsx
+│       ├── TextEditing.jsx
+│       └── ...
+├── src/                   # Legacy CRA files (can be removed)
+├── next.config.js         # Next.js configuration
+└── package.json           # Dependencies and scripts
+```
 
 ## Notes
-- Created with React; canvas logic is centralized in `src/ExcalidrawClone.jsx`.
-- ESLint warnings may appear during development; they do not block running. You can address them incrementally.
-- If you change tool behavior, keep coordinate conversions and camera interactions consistent.
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+- ESLint warnings during development (hooks deps, a11y) don't block the app.
+- Performance is smooth up to ~500–1000 elements; beyond that, consider spatial partitioning or WebGL.
+- The `src/` directory contains legacy Create React App files and can be removed after confirming the Next.js migration works.
 
-## Available Scripts
+## Migration from CRA to Next.js
 
-In the project directory, you can run:
+This project was converted from Create React App to Next.js for:
+- ✅ Faster builds and development server
+- ✅ Better production optimizations
+- ✅ Modern App Router architecture
+- ✅ Deployment-ready for Vercel/serverless platforms
 
-### `npm start`
+**To complete cleanup:** Delete the `src/` folder and `public/` CRA files after testing.
+- For best performance, keep many concurrent brush erases moderate; large area operations may take longer.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+<details>
+<summary><strong>Export / Import (PNG & JSON)</strong></summary>
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- <strong>Export PNG:</strong> Use the Export panel (if available) to save a PNG snapshot of the current board.
+- <strong>Export JSON:</strong> Save a JSON file of your elements/camera to re-open later.
+- <strong>Import JSON:</strong> Load a previously exported JSON to restore a board state.
+- <strong>Tips:</strong> For cleaner PNGs, zoom to a comfortable level before exporting; transparent backgrounds may be supported depending on your settings.
 
-### `npm test`
+</details>
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+<details>
+<summary><strong>Next Steps</strong></summary>
 
-### `npm run build`
+- Add screenshots/GIFs of the board and tools.
+- Expand a shortcuts section (e.g., Undo, export/import, snapshots) if you use those features.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+</details>
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
